@@ -129,6 +129,7 @@ class P4Switch(Switch):
             args.append("--debugger")
         if self.log_console:
             args.append("--log-console")
+        args.append("-- --priority-queues 2") #############AQUIIIIIIIIIIIIIIIIIIIIIIIII
         logfile = "/tmp/p4s.{}.log".format(self.name)
         info(' '.join(args) + "\n")
 

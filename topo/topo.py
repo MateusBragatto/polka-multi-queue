@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='Mininet demo')
 #parser.add_argument('--behavioral-exe', help='Path to behavioral executable',
                     #type=str, action="store", default="/home/p4/INT-M-PolKA/behavioral-model/targets/simple_switch/simple_switch")
 parser.add_argument('--behavioral-exe', help='Path to behavioral executable',
-                    type=str, action="store", default="/usr/local/bin/simple_switch")
+                    type=str, action="store", default="simple_switch") #por estar usando o caminho la acho q ta certo o priority e tals
 
 parser.add_argument('--thrift-port', help='Thrift server port for table updates',
                     type=int, action="store", default=9090)
@@ -66,7 +66,7 @@ class INTTopo(Topo):
             thrift_port = thrift_port + 1
 
         info("*** Adding hosts\n")
-        n = 4
+        n = 5 #mudei de 4 pra 5 pra ter 2 hosts no e1
         for h in xrange(n):
             host = self.addHost('h%d' % (h + 1),
                                 ip = "10.0.1.%d/24" % (h+1),
@@ -87,9 +87,10 @@ class INTTopo(Topo):
         self.addLink(self.switch_list[8], self.switch_list[6])  #s5-s3
         self.addLink(self.switch_list[6], self.switch_list[1])  #s3-e2
         self.addLink(self.switch_list[1], self.host_list[1])    #e2-h2
+        self.addLink(self.host_list[4], self.switch_list[0],)  #h5-e1 adicionado, provavelmente vai ser e1-eth3
 
 def main():
-    num_hosts = 4
+    num_hosts = 5 #mudei de 4 pra 5
 
     topo = INTTopo(args.behavioral_exe,
                    #args.json,

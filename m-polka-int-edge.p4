@@ -7,6 +7,13 @@ const bit<16> TYPE_SRCROUTING = 0x2020;
 
 #define MAX_HOPS 20
 
+typedef bit<32> enq_qdepth_v;
+
+//acho q n precisa
+typedef bit<3> priority_v;
+typedef bit<5> qid_v;
+
+
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -60,19 +67,28 @@ header intoption_t {
   bit<16>   domain_specific_id;
   bit<16>   domain_instruction;
   bit<16>   ds_flags;
+  //priority_v priority;
+  //qid_v      qid;
+
+  
 }
 
 header inthdr_t {
-  bit<32>    sw_id;
-  bit<32>    ingress_port;
-  bit<32>    egress_port;
-  bit<32>    replicate_count;
-  bit<64>   ingress_global_timestamp;
-  bit<64>   egress_global_timestamp;
-  bit<32>   enq_timestamp;
-  bit<32>   enq_qdepth;
-  bit<32>   deq_timedelta;
-  bit<32>   deq_qdepth;
+  bit<32>      sw_id;
+  bit<32>      ingress_port;
+  bit<32>      egress_port;
+  bit<32>      replicate_count;
+  bit<64>      ingress_global_timestamp;
+  bit<64>      egress_global_timestamp;
+  bit<32>      enq_timestamp;
+  //bit<32>      enq_qdepth;
+  bit<32>      deq_timedelta;
+  bit<32>      deq_qdepth;
+  enq_qdepth_v enq_qdepth0;
+  enq_qdepth_v enq_qdepth1;
+  //n precisa mas eu vo deixar pra mostrar q eh mudavel
+  priority_v priority;
+  qid_v      qid;
 }
 
 struct metadata {
@@ -197,6 +213,7 @@ control process_tunnel_encap(inout headers hdr,
         hdr.int_option.remaining_hop_count = 0;
         hdr.int_option.instruction_bitmap = 56832;
         hdr.int_option.domain_specific_id = 0x0000;
+        
     }
 
     action add_int_option_header(){
@@ -274,11 +291,36 @@ control MyIngress(inout headers hdr,
       default_action = NoAction();
     }
 
+    table teste {
+        key = {
+            standard_metadata.priority: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
+    table teste2 {
+        key = {
+            standard_metadata.qid: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    } 
+
     apply {
 
       if (hdr.ipv4.isValid() && hdr.ethernet.etherType != TYPE_SRCROUTING ) { //55 em decimal, 37 em hexa
               if (hdr.ipv4.diffserv == 55){
                 process_tunnel_encap.apply(hdr, meta, standard_metadata);
+                standard_metadata.priority = 1; //coleta de int vai passar na 0  em todos swithces - nao importa (le de tds registradores)
+                teste.apply();
+                teste2.apply();
               }
               else{
                 //encaminhamento comum ipv4, pacote de dados
@@ -314,7 +356,33 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    apply {  }
+
+    table teste {
+        key = {
+            standard_metadata.priority: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
+    table teste2 {
+        key = {
+            standard_metadata.qid: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }              
+    apply { 
+      teste.apply();
+      teste2.apply();
+
+     }
 }
 
 /*************************************************************************

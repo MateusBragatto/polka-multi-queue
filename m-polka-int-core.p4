@@ -17,6 +17,10 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 
+typedef bit<3> priority_v;
+typedef bit<5> qid_v;
+typedef bit<32> enq_qdepth_v;
+
 enum bit<8> FieldLists {
     resubmit_fl1 = 0
 }
@@ -84,9 +88,24 @@ header inthdr_t {
   bit<64>   ingress_global_timestamp;
   bit<64>   egress_global_timestamp;
   bit<32>   enq_timestamp;
-  bit<32>   enq_qdepth;
+  //bit<32>   enq_qdepth;
   bit<32>   deq_timedelta;
   bit<32>   deq_qdepth;
+  //cada switch q passar capta todas as infos dela (as 2 filas de cada porta)
+  enq_qdepth_v port1_enq_qdepth0;
+  enq_qdepth_v port1_enq_qdepth1;
+
+  enq_qdepth_v port2_enq_qdepth0;
+  enq_qdepth_v port2_enq_qdepth1;
+
+  enq_qdepth_v port3_enq_qdepth0;
+  enq_qdepth_v port3_enq_qdepth1;
+
+  enq_qdepth_v port4_enq_qdepth0;
+  enq_qdepth_v port4_enq_qdepth1;
+  //n precisa mas eu vo deixar pra mostrar q eh mudavel
+  priority_v priority;
+  qid_v      qid;
 }
 
 header last_egress_sampling_timestamp_t {
@@ -120,7 +139,7 @@ struct headers {
   ipv4_t              ipv4;
 }
 
-register<bit<48>>(960) r_last_egress_global_timestamp;
+//register<bit<48>>(960) r_last_egress_global_timestamp;
 
 /*************************************************************************
 *********************** P A R S E R  ***********************************
@@ -242,7 +261,11 @@ control MyIngress(inout headers hdr,
 
         hdr.ipv4.ttl = hdr.ipv4.ttl -1;
 
-    }
+  }
+
+  action  ip_sender_change_priority(bit<3> new_priority){
+    standard_metadata.priority = new_priority;
+  }
 
   table ipv4_lpm {
         key = {
@@ -257,9 +280,46 @@ control MyIngress(inout headers hdr,
         default_action = NoAction();
   }
 
+  table teste {
+        key = {
+            standard_metadata.priority: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
+    table teste2 {
+        key = {
+            standard_metadata.qid: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    } 
+
+    table ip_sender_match_table{
+        key = {
+            hdr.ipv4.srcAddr: lpm;
+        }
+        actions = {
+            ip_sender_change_priority;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
   apply {
     if (meta.apply_sr==1){
+      standard_metadata.priority = 1; //passando pelas filas 0 (define qid = 0 na saida) - tanto faz vai ler de todos
       if (meta.mymeta.resubmit_reason == 0) {
+            teste.apply();
+            teste2.apply();
             // Source-routing calculation
             srcRoute_nhop();
 
@@ -311,6 +371,7 @@ control MyIngress(inout headers hdr,
         if(hdr.ipv4.diffserv != 55){
           //encaminhamento pacotes
           ipv4_lpm.apply();
+          ip_sender_match_table.apply();
         }
         else{
           drop();
@@ -326,6 +387,161 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
+
+  //novos
+  register<enq_qdepth_v>(1) reg_port1_qdepth_0;
+  register<enq_qdepth_v>(1) reg_port1_qdepth_1;
+
+  register<enq_qdepth_v>(1) reg_port2_qdepth_0;
+  register<enq_qdepth_v>(1) reg_port2_qdepth_1;
+
+  register<enq_qdepth_v>(1) reg_port3_qdepth_0;
+  register<enq_qdepth_v>(1) reg_port3_qdepth_1;
+
+  register<enq_qdepth_v>(1) reg_port4_qdepth_0;
+  register<enq_qdepth_v>(1) reg_port4_qdepth_1;
+
+
+  //porta 1
+  action r_register_manipulation_port1_qdepth0(){
+        //lendo o registrador 0 na posicao 0 (so tem essa) e armazenado no qdepth0 do int
+        //enq_qdepth_v = 19
+        bit<32> qdepth_value;
+        reg_port1_qdepth_0.read(qdepth_value,0);
+        hdr.int_info[0].port1_enq_qdepth0 = qdepth_value;
+  }
+
+  action r_register_manipulation_port1_qdepth1(){
+      //lendo o registrador 1 na posicao 0 (so tem essa) e armazenado no qdepth1 do int
+      //enq_qdepth_v = 19bit
+      bit<32> qdepth_value;
+      reg_port1_qdepth_1.read(qdepth_value,0);
+      hdr.int_info[0].port1_enq_qdepth1 = qdepth_value;
+  }
+
+  //porta 2
+  action r_register_manipulation_port2_qdepth0(){
+        //lendo o registrador 0 na posicao 0 (so tem essa) e armazenado no qdepth0 do int
+        //enq_qdepth_v = 19
+        bit<32> qdepth_value;
+        reg_port2_qdepth_0.read(qdepth_value,0);
+        hdr.int_info[0].port2_enq_qdepth0 = qdepth_value;
+  }
+
+  action r_register_manipulation_port2_qdepth1(){
+      //lendo o registrador 1 na posicao 0 (so tem essa) e armazenado no qdepth1 do int
+      //enq_qdepth_v = 19bit
+      bit<32> qdepth_value;
+      reg_port2_qdepth_1.read(qdepth_value,0);
+      hdr.int_info[0].port2_enq_qdepth1 = qdepth_value;
+  }
+
+  
+  //porta 3
+  action r_register_manipulation_port3_qdepth0(){
+        //lendo o registrador 0 na posicao 0 (so tem essa) e armazenado no qdepth0 do int
+        //enq_qdepth_v = 19
+        bit<32> qdepth_value;
+        reg_port3_qdepth_0.read(qdepth_value,0);
+        hdr.int_info[0].port3_enq_qdepth0 = qdepth_value;
+  }
+
+  action r_register_manipulation_port3_qdepth1(){
+      //lendo o registrador 1 na posicao 0 (so tem essa) e armazenado no qdepth1 do int
+      //enq_qdepth_v = 19bit
+      bit<32> qdepth_value;
+      reg_port3_qdepth_1.read(qdepth_value,0);
+      hdr.int_info[0].port3_enq_qdepth1 = qdepth_value;
+  }
+
+  //porta 4
+  action r_register_manipulation_port4_qdepth0(){
+        //lendo o registrador 0 na posicao 0 (so tem essa) e armazenado no qdepth0 do int
+        //enq_qdepth_v = 19
+        bit<32> qdepth_value;
+        reg_port4_qdepth_0.read(qdepth_value,0);
+        hdr.int_info[0].port3_enq_qdepth0 = qdepth_value;
+  }
+
+  action r_register_manipulation_port4_qdepth1(){
+      //lendo o registrador 1 na posicao 0 (so tem essa) e armazenado no qdepth1 do int
+      //enq_qdepth_v = 19bit
+      bit<32> qdepth_value;
+      reg_port4_qdepth_1.read(qdepth_value,0);
+      hdr.int_info[0].port3_enq_qdepth1 = qdepth_value;
+  }
+
+
+
+  //porta 1
+  action w_register_manipulation_port1_qdepth0(){
+        //register 0, qid 0
+        //enq_qdepth_v = 19
+        //standar_metadata_qdepth tbm eh 19 bits
+
+        reg_port1_qdepth_0.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+        
+    }
+
+  action w_register_manipulation_port1_qdepth1(){
+      //register 1, qid 1
+      reg_port1_qdepth_1.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+      
+  }
+
+
+
+  //porta 2
+  action w_register_manipulation_port2_qdepth0(){
+        //register 0, qid 0
+        //enq_qdepth_v = 19
+        //standar_metadata_qdepth tbm eh 19 bits
+
+        reg_port2_qdepth_0.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+        
+    }
+
+  action w_register_manipulation_port2_qdepth1(){
+      //register 1, qid 1
+      reg_port2_qdepth_1.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+      
+  }
+
+
+  //porta 3
+  action w_register_manipulation_port3_qdepth0(){
+        //register 0, qid 0
+        //enq_qdepth_v = 19
+        //standar_metadata_qdepth tbm eh 19 bits
+
+        reg_port3_qdepth_0.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+        
+    }
+
+  action w_register_manipulation_port3_qdepth1(){
+      //register 1, qid 1
+      reg_port3_qdepth_1.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+      
+  }
+
+  //porta 4
+
+  //porta 2
+  action w_register_manipulation_port4_qdepth0(){
+        //register 0, qid 0
+        //enq_qdepth_v = 19
+        //standar_metadata_qdepth tbm eh 19 bits
+
+        reg_port4_qdepth_0.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+        
+    }
+
+  action w_register_manipulation_port4_qdepth1(){
+      //register 1, qid 1
+      reg_port4_qdepth_1.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
+      
+  }
+
 
   action drop() {
     mark_to_drop(standard_metadata);
@@ -346,9 +562,54 @@ control MyEgress(inout headers hdr,
     hdr.int_info[0].ingress_global_timestamp=(bit<64>)standard_metadata.ingress_global_timestamp;
     hdr.int_info[0].egress_global_timestamp=(bit<64>)standard_metadata.egress_global_timestamp;
     hdr.int_info[0].enq_timestamp=(bit<32>)standard_metadata.enq_timestamp;
-    hdr.int_info[0].enq_qdepth=(bit<32>)standard_metadata.enq_qdepth;
+    //leituras nos registradores dos enq_qdepth feitas em outras actions
+    //hdr.int_info[0].enq_qdepth=(bit<32>)standard_metadata.enq_qdepth;
     hdr.int_info[0].deq_timedelta=(bit<32>)standard_metadata.deq_timedelta;
     hdr.int_info[0].deq_qdepth=(bit<32>)standard_metadata.deq_qdepth;
+   
+    hdr.int_info[0].priority = (priority_v)standard_metadata.priority; //definindo no ingresso (0)
+    hdr.int_info[0].qid = (qid_v)standard_metadata.qid; //se o priority foi 0 no ingress, aqui vai ser tbm
+
+    //leituras dos registradores
+    r_register_manipulation_port1_qdepth0();
+    r_register_manipulation_port1_qdepth1();
+
+    r_register_manipulation_port2_qdepth0();
+    r_register_manipulation_port2_qdepth1();
+
+    r_register_manipulation_port3_qdepth0();
+    r_register_manipulation_port3_qdepth1();
+
+    r_register_manipulation_port4_qdepth0();
+    r_register_manipulation_port4_qdepth1();
+
+    /*if(standard_metadata.egress_port == 1){
+      //r_register_manipulation_port1_qdepth0();
+      //r_register_manipulation_port1_qdepth1();
+      bit<32> qdepth0_value;
+      reg_port1_qdepth_0.read(qdepth0_value,0);
+      hdr.int_info[0].enq_qdepth0 = qdepth0_value;
+
+      bit<32> qdepth1_value;
+      reg_port1_qdepth_1.read(qdepth1_value,0);
+      hdr.int_info[0].enq_qdepth1 = qdepth1_value;
+
+    }*/
+    /*else if(standard_metadata.egress_port == 2){
+      r_register_manipulation_port2_qdepth0();
+      r_register_manipulation_port2_qdepth1();
+    }
+    else if(standard_metadata.egress_port == 3){
+      r_register_manipulation_port3_qdepth0();
+      r_register_manipulation_port3_qdepth1();
+    }
+    else if(standard_metadata.egress_port == 4){
+      r_register_manipulation_port4_qdepth0();
+      r_register_manipulation_port4_qdepth1();
+    }*/
+    
+    
+
   }
 
   table addIntInfo {
@@ -362,24 +623,87 @@ control MyEgress(inout headers hdr,
     default_action = NoAction();
   }
 
+  /*table teste {
+        key = {
+            standard_metadata.priority: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
+    table teste2 {
+        key = {
+            standard_metadata.qid: exact;
+        }
+        actions = {
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+  */
   apply {
+
+    
     // Prune multicast packet to ingress port to preventing loop
     if (standard_metadata.egress_port == standard_metadata.ingress_port) {
       drop();
-    }else if (hdr.int_option.isValid() && meta.mymeta.resubmit_reason == 1) {
-        r_last_egress_global_timestamp.read(meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp,
-        (bit<32>)standard_metadata.egress_port);
-
-        if(standard_metadata.egress_global_timestamp - meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp > 50000) {
-            addIntInfo.apply();
-            r_last_egress_global_timestamp.write((bit<32>)standard_metadata.egress_port, standard_metadata.egress_global_timestamp);
-        }
-      } else {
-        //delIntInfo
-        hdr.int_option.remaining_hop_count = 0;
-        hdr.int_info.pop_front(MAX_HOPS);
+    } 
+    //verificando se eh um pacote de dados
+    else if(!hdr.int_option.isValid()){
+      if(standard_metadata.qid == 0 && standard_metadata.egress_port == 1){
+        w_register_manipulation_port1_qdepth0();
       }
+      else if(standard_metadata.qid == 1 && standard_metadata.egress_port == 1){
+        w_register_manipulation_port1_qdepth1();
+      }
+      else if(standard_metadata.qid == 0 && standard_metadata.egress_port == 2){
+        w_register_manipulation_port2_qdepth0();
+      }
+      else if(standard_metadata.qid == 1 && standard_metadata.egress_port == 2){
+        w_register_manipulation_port2_qdepth1();
+      }
+      else if(standard_metadata.qid == 0 && standard_metadata.egress_port == 3){
+        w_register_manipulation_port3_qdepth0();
+      }
+      else if(standard_metadata.qid == 1 && standard_metadata.egress_port == 3){
+        w_register_manipulation_port3_qdepth1();
+      }
+      else if(standard_metadata.qid == 0 && standard_metadata.egress_port == 4){
+        w_register_manipulation_port4_qdepth0();
+      }
+      else if(standard_metadata.qid == 1 && standard_metadata.egress_port == 4){
+        w_register_manipulation_port4_qdepth1();
+      } 
     }
+
+
+    //pacote de telemetria de recirculacao (primeira porta)
+    else if (meta.mymeta.resubmit_reason == 1) {
+      //r_last_egress_global_timestamp.read(meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp,(bit<32>)standard_metadata.egress_port);
+
+      //nao pega todo pacote de telemetria, baseado num tempo de 50 milisegundos
+      //pensar aqui no que faremos
+      //if(standard_metadata.egress_global_timestamp - meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp > 50000) {
+      addIntInfo.apply();
+      //teste.apply();
+      //teste2.apply();
+      //r_last_egress_global_timestamp.write((bit<32>)standard_metadata.egress_port, standard_metadata.egress_global_timestamp);
+      //}
+    } 
+      
+    //qualquer outra porta que nao seja a de cima (primeira porta)
+    else {
+      //remove o historico
+      //hdr.int_option.remaining_hop_count = 0;
+      //hdr.int_info.pop_front(MAX_HOPS);
+
+      addIntInfo.apply();
+    }
+  }
 
 }
 

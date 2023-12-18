@@ -31,9 +31,20 @@ class IntData(Packet):
                     BitField("ingress_global_timestamp", 0, 64),
                     BitField("egress_global_timestamp", 0, 64),
                     BitField("enq_timestamp", 0, 32),
-                    BitField("enq_qdepth", 0, 32),
+                    #BitField("enq_qdepth", 0, 32),
                     BitField("deq_timedelta", 0, 32),
-                    BitField("deq_qdepth", 0, 32)]
+                    BitField("deq_qdepth", 0, 32),
+                    BitField("port1_enq_qdepth0", 0, 32),
+                    BitField("port1_enq_qdepth1", 0, 32),
+                    BitField("port2_enq_qdepth0", 0, 32),
+                    BitField("port2_enq_qdepth1", 0, 32),
+                    BitField("port3_enq_qdepth0", 0, 32),
+                    BitField("port3_enq_qdepth1", 0, 32),
+                    BitField("port4_enq_qdepth0", 0, 32),
+                    BitField("port4_enq_qdepth1", 0, 32),
+                    BitField("priority", 0, 3),
+                    BitField("qid", 0, 5)]
+
 
 class SourceRoute(Packet):
    fields_desc = [ BitField("nrouteid", 0, 112)]
@@ -92,7 +103,10 @@ def main():
       #file.write(str(header) + '\n')
   #mudei
   #iface = 'enp0s8'
-  iface = 'e3-eth1'
+  if len(sys.argv) < 2:
+        print("Uso: python receive_atualizado.py interface (ex:e2-eth1)")
+        sys.exit(1)
+  iface = sys.argv[1]
   # bind_layers(Ether, IP, type = 0x2020)
   # bind_layers(IP, ICMP, proto = 1)
   # bind_layers(ICMP, SourceRoute)

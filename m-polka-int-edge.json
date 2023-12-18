@@ -98,9 +98,12 @@
         ["ingress_global_timestamp", 64, false],
         ["egress_global_timestamp", 64, false],
         ["enq_timestamp", 32, false],
-        ["enq_qdepth", 32, false],
         ["deq_timedelta", 32, false],
-        ["deq_qdepth", 32, false]
+        ["deq_qdepth", 32, false],
+        ["enq_qdepth0", 32, false],
+        ["enq_qdepth1", 32, false],
+        ["priority", 3, false],
+        ["qid", 5, false]
       ]
     }
   ],
@@ -520,7 +523,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "m-polka-int-edge.p4",
-        "line" : 348,
+        "line" : 416,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -537,7 +540,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "m-polka-int-edge.p4",
-        "line" : 326,
+        "line" : 394,
         "column" : 6,
         "source_fragment" : "update_checksum( ..."
       },
@@ -599,8 +602,20 @@
       "primitives" : []
     },
     {
-      "name" : "MyIngress.drop",
+      "name" : "NoAction",
       "id" : 1,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "MyIngress.drop",
+      "id" : 3,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -613,7 +628,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 251,
+            "line" : 268,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -622,7 +637,7 @@
     },
     {
       "name" : "MyIngress.ipv4_forward",
-      "id" : 2,
+      "id" : 4,
       "runtime_data" : [
         {
           "name" : "dstAddr",
@@ -648,7 +663,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 257,
+            "line" : 274,
             "column" : 6,
             "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
           }
@@ -667,7 +682,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 259,
+            "line" : 276,
             "column" : 6,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -709,7 +724,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 261,
+            "line" : 278,
             "column" : 6,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl -1"
           }
@@ -718,7 +733,7 @@
     },
     {
       "name" : "MyIngress.process_tunnel_encap.tdrop",
-      "id" : 3,
+      "id" : 5,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -731,7 +746,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 176,
+            "line" : 192,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -740,7 +755,7 @@
     },
     {
       "name" : "MyIngress.process_tunnel_encap.add_sourcerouting_header",
-      "id" : 4,
+      "id" : 6,
       "runtime_data" : [
         {
           "name" : "port",
@@ -774,7 +789,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 182,
+            "line" : 198,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -793,7 +808,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 183,
+            "line" : 199,
             "column" : 8,
             "source_fragment" : "meta.apply_sr = sr"
           }
@@ -812,7 +827,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 185,
+            "line" : 201,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -827,7 +842,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 187,
+            "line" : 203,
             "column" : 8,
             "source_fragment" : "hdr.srcRoute.setValid()"
           }
@@ -846,7 +861,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 188,
+            "line" : 204,
             "column" : 8,
             "source_fragment" : "hdr.srcRoute.routeId = routeIdPacket"
           }
@@ -861,7 +876,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 190,
+            "line" : 206,
             "column" : 8,
             "source_fragment" : "hdr.int_option.setValid()"
           }
@@ -880,7 +895,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 191,
+            "line" : 207,
             "column" : 8,
             "source_fragment" : "hdr.int_option.ver = 2"
           }
@@ -899,7 +914,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 192,
+            "line" : 208,
             "column" : 8,
             "source_fragment" : "hdr.int_option.d = 0"
           }
@@ -918,7 +933,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 193,
+            "line" : 209,
             "column" : 8,
             "source_fragment" : "hdr.int_option.e = 0"
           }
@@ -937,7 +952,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 194,
+            "line" : 210,
             "column" : 8,
             "source_fragment" : "hdr.int_option.m = 0"
           }
@@ -956,7 +971,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 195,
+            "line" : 211,
             "column" : 8,
             "source_fragment" : "hdr.int_option.r = 0"
           }
@@ -975,7 +990,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 196,
+            "line" : 212,
             "column" : 8,
             "source_fragment" : "hdr.int_option.hop_ml = 10"
           }
@@ -994,7 +1009,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 197,
+            "line" : 213,
             "column" : 8,
             "source_fragment" : "hdr.int_option.remaining_hop_count = 0"
           }
@@ -1013,7 +1028,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 198,
+            "line" : 214,
             "column" : 8,
             "source_fragment" : "hdr.int_option.instruction_bitmap = 56832"
           }
@@ -1032,7 +1047,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 199,
+            "line" : 215,
             "column" : 8,
             "source_fragment" : "hdr.int_option.domain_specific_id = 0x0000"
           }
@@ -1041,7 +1056,7 @@
     },
     {
       "name" : "MyIngress.process_tunnel_encap.add_int_option_header",
-      "id" : 5,
+      "id" : 7,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1058,7 +1073,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 203,
+            "line" : 220,
             "column" : 8,
             "source_fragment" : "hdr.int_option.ver = 2"
           }
@@ -1077,7 +1092,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 204,
+            "line" : 221,
             "column" : 8,
             "source_fragment" : "hdr.int_option.d = 0"
           }
@@ -1096,7 +1111,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 205,
+            "line" : 222,
             "column" : 8,
             "source_fragment" : "hdr.int_option.e = 0"
           }
@@ -1115,7 +1130,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 206,
+            "line" : 223,
             "column" : 8,
             "source_fragment" : "hdr.int_option.m = 0"
           }
@@ -1134,7 +1149,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 207,
+            "line" : 224,
             "column" : 8,
             "source_fragment" : "hdr.int_option.r = 0"
           }
@@ -1153,7 +1168,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 208,
+            "line" : 225,
             "column" : 8,
             "source_fragment" : "hdr.int_option.hop_ml = 10"
           }
@@ -1172,7 +1187,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 209,
+            "line" : 226,
             "column" : 8,
             "source_fragment" : "hdr.int_option.remaining_hop_count = 0"
           }
@@ -1191,7 +1206,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 210,
+            "line" : 227,
             "column" : 8,
             "source_fragment" : "hdr.int_option.instruction_bitmap = 56832"
           }
@@ -1210,7 +1225,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 211,
+            "line" : 228,
             "column" : 8,
             "source_fragment" : "hdr.int_option.domain_specific_id = 0x0000"
           }
@@ -1225,7 +1240,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 213,
+            "line" : 230,
             "column" : 8,
             "source_fragment" : "hdr.int_option.setValid()"
           }
@@ -1233,8 +1248,8 @@
       ]
     },
     {
-      "name" : "mpolkaintedge232",
-      "id" : 6,
+      "name" : "mpolkaintedge249",
+      "id" : 8,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1247,7 +1262,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 232,
+            "line" : 249,
             "column" : 12,
             "source_fragment" : "hdr.srcRoute.setInvalid()"
           }
@@ -1255,8 +1270,8 @@
       ]
     },
     {
-      "name" : "mpolkaintedge234",
-      "id" : 7,
+      "name" : "mpolkaintedge251",
+      "id" : 9,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1281,8 +1296,34 @@
       ]
     },
     {
-      "name" : "mpolkaintedge300",
-      "id" : 8,
+      "name" : "mpolkaintedge321",
+      "id" : 10,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "priority"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 321,
+            "column" : 16,
+            "source_fragment" : "standard_metadata.priority = 1"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "mpolkaintedge342",
+      "id" : 11,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1299,7 +1340,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 300,
+            "line" : 342,
             "column" : 16,
             "source_fragment" : "standard_metadata.egress_spec = 2"
           }
@@ -1307,8 +1348,8 @@
       ]
     },
     {
-      "name" : "mpolkaintedge302",
-      "id" : 9,
+      "name" : "mpolkaintedge344",
+      "id" : 12,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1325,7 +1366,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 302,
+            "line" : 344,
             "column" : 16,
             "source_fragment" : "standard_metadata.egress_spec = 1"
           }
@@ -1333,8 +1374,8 @@
       ]
     },
     {
-      "name" : "mpolkaintedge289",
-      "id" : 10,
+      "name" : "mpolkaintedge331",
+      "id" : 13,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1366,7 +1407,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 290,
+            "line" : 332,
             "column" : 14,
             "source_fragment" : "hdr.srcRoute.setInvalid()"
           }
@@ -1385,7 +1426,7 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 293,
+            "line" : 335,
             "column" : 14,
             "source_fragment" : "hdr.int_info.pop_front(20)"
           }
@@ -1400,12 +1441,24 @@
           ],
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 296,
+            "line" : 338,
             "column" : 14,
             "source_fragment" : "hdr.int_option.setInvalid()"
           }
         }
       ]
+    },
+    {
+      "name" : "NoAction",
+      "id" : 14,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 15,
+      "runtime_data" : [],
+      "primitives" : []
     }
   ],
   "pipelines" : [
@@ -1414,7 +1467,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "m-polka-int-edge.p4",
-        "line" : 246,
+        "line" : 263,
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
@@ -1425,7 +1478,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 216,
+            "line" : 233,
             "column" : 10,
             "source_fragment" : "tunnel_encap_process_sr"
           },
@@ -1443,7 +1496,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 5, 3],
+          "action_ids" : [6, 7, 5],
           "actions" : ["MyIngress.process_tunnel_encap.add_sourcerouting_header", "MyIngress.process_tunnel_encap.add_int_option_header", "MyIngress.process_tunnel_encap.tdrop"],
           "base_default_next" : "node_5",
           "next_tables" : {
@@ -1452,18 +1505,18 @@
             "MyIngress.process_tunnel_encap.tdrop" : "node_5"
           },
           "default_entry" : {
-            "action_id" : 3,
+            "action_id" : 5,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
           }
         },
         {
-          "name" : "tbl_mpolkaintedge232",
+          "name" : "tbl_mpolkaintedge249",
           "id" : 1,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 232,
+            "line" : 249,
             "column" : 12,
             "source_fragment" : "hdr.srcRoute.setInvalid()"
           },
@@ -1474,25 +1527,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [6],
-          "actions" : ["mpolkaintedge232"],
-          "base_default_next" : null,
+          "action_ids" : [8],
+          "actions" : ["mpolkaintedge249"],
+          "base_default_next" : "tbl_mpolkaintedge321",
           "next_tables" : {
-            "mpolkaintedge232" : null
+            "mpolkaintedge249" : "tbl_mpolkaintedge321"
           },
           "default_entry" : {
-            "action_id" : 6,
+            "action_id" : 8,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_mpolkaintedge234",
+          "name" : "tbl_mpolkaintedge251",
           "id" : 2,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 234,
+            "line" : 251,
             "column" : 35,
             "source_fragment" : "="
           },
@@ -1503,25 +1556,126 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7],
-          "actions" : ["mpolkaintedge234"],
-          "base_default_next" : null,
+          "action_ids" : [9],
+          "actions" : ["mpolkaintedge251"],
+          "base_default_next" : "tbl_mpolkaintedge321",
           "next_tables" : {
-            "mpolkaintedge234" : null
+            "mpolkaintedge251" : "tbl_mpolkaintedge321"
           },
           "default_entry" : {
-            "action_id" : 7,
+            "action_id" : 9,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "MyIngress.ipv4_lpm",
+          "name" : "tbl_mpolkaintedge321",
           "id" : 3,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 264,
+            "line" : 321,
+            "column" : 43,
+            "source_fragment" : "="
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [10],
+          "actions" : ["mpolkaintedge321"],
+          "base_default_next" : "MyIngress.teste",
+          "next_tables" : {
+            "mpolkaintedge321" : "MyIngress.teste"
+          },
+          "default_entry" : {
+            "action_id" : 10,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "MyIngress.teste",
+          "id" : 4,
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 294,
+            "column" : 10,
+            "source_fragment" : "teste"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.priority",
+              "target" : ["standard_metadata", "priority"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [1],
+          "actions" : ["NoAction"],
+          "base_default_next" : "MyIngress.teste2",
+          "next_tables" : {
+            "NoAction" : "MyIngress.teste2"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "MyIngress.teste2",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 305,
+            "column" : 10,
+            "source_fragment" : "teste2"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.qid",
+              "target" : ["standard_metadata", "qid"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [2],
+          "actions" : ["NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "NoAction" : null
+          },
+          "default_entry" : {
+            "action_id" : 2,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "MyIngress.ipv4_lpm",
+          "id" : 6,
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 281,
             "column" : 10,
             "source_fragment" : "ipv4_lpm"
           },
@@ -1539,7 +1693,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 1, 0],
+          "action_ids" : [4, 3, 0],
           "actions" : ["MyIngress.ipv4_forward", "MyIngress.drop", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -1555,11 +1709,11 @@
           }
         },
         {
-          "name" : "tbl_mpolkaintedge289",
-          "id" : 4,
+          "name" : "tbl_mpolkaintedge331",
+          "id" : 7,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 289,
+            "line" : 331,
             "column" : 37,
             "source_fragment" : "= TYPE_IPV4; ..."
           },
@@ -1570,25 +1724,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [10],
-          "actions" : ["mpolkaintedge289"],
-          "base_default_next" : "node_11",
+          "action_ids" : [13],
+          "actions" : ["mpolkaintedge331"],
+          "base_default_next" : "node_14",
           "next_tables" : {
-            "mpolkaintedge289" : "node_11"
+            "mpolkaintedge331" : "node_14"
           },
           "default_entry" : {
-            "action_id" : 10,
+            "action_id" : 13,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_mpolkaintedge300",
-          "id" : 5,
+          "name" : "tbl_mpolkaintedge342",
+          "id" : 8,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 300,
+            "line" : 342,
             "column" : 46,
             "source_fragment" : "="
           },
@@ -1599,25 +1753,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [8],
-          "actions" : ["mpolkaintedge300"],
+          "action_ids" : [11],
+          "actions" : ["mpolkaintedge342"],
           "base_default_next" : null,
           "next_tables" : {
-            "mpolkaintedge300" : null
+            "mpolkaintedge342" : null
           },
           "default_entry" : {
-            "action_id" : 8,
+            "action_id" : 11,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_mpolkaintedge302",
-          "id" : 6,
+          "name" : "tbl_mpolkaintedge344",
+          "id" : 9,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 302,
+            "line" : 344,
             "column" : 46,
             "source_fragment" : "="
           },
@@ -1628,14 +1782,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [9],
-          "actions" : ["mpolkaintedge302"],
+          "action_ids" : [12],
+          "actions" : ["mpolkaintedge344"],
           "base_default_next" : null,
           "next_tables" : {
-            "mpolkaintedge302" : null
+            "mpolkaintedge344" : null
           },
           "default_entry" : {
-            "action_id" : 9,
+            "action_id" : 12,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1649,7 +1803,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 279,
+            "line" : 318,
             "column" : 10,
             "source_fragment" : "hdr.ipv4.isValid() && hdr.ethernet.etherType != TYPE_SRCROUTING"
           },
@@ -1685,14 +1839,14 @@
             }
           },
           "true_next" : "node_3",
-          "false_next" : "node_9"
+          "false_next" : "node_12"
         },
         {
           "name" : "node_3",
           "id" : 1,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 280,
+            "line" : 319,
             "column" : 18,
             "source_fragment" : "hdr.ipv4.diffserv == 55"
           },
@@ -1718,7 +1872,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 231,
+            "line" : 248,
             "column" : 11,
             "source_fragment" : "meta.apply_sr!=1"
           },
@@ -1736,15 +1890,15 @@
               }
             }
           },
-          "true_next" : "tbl_mpolkaintedge232",
-          "false_next" : "tbl_mpolkaintedge234"
+          "true_next" : "tbl_mpolkaintedge249",
+          "false_next" : "tbl_mpolkaintedge251"
         },
         {
-          "name" : "node_9",
+          "name" : "node_12",
           "id" : 3,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 288,
+            "line" : 330,
             "column" : 15,
             "source_fragment" : "hdr.ethernet.etherType == TYPE_SRCROUTING"
           },
@@ -1763,14 +1917,14 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_mpolkaintedge289"
+          "true_next" : "tbl_mpolkaintedge331"
         },
         {
-          "name" : "node_11",
+          "name" : "node_14",
           "id" : 4,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 299,
+            "line" : 341,
             "column" : 18,
             "source_fragment" : "standard_metadata.ingress_port == 1"
           },
@@ -1788,15 +1942,15 @@
               }
             }
           },
-          "true_next" : "tbl_mpolkaintedge300",
-          "false_next" : "node_13"
+          "true_next" : "tbl_mpolkaintedge342",
+          "false_next" : "node_16"
         },
         {
-          "name" : "node_13",
+          "name" : "node_16",
           "id" : 5,
           "source_info" : {
             "filename" : "m-polka-int-edge.p4",
-            "line" : 301,
+            "line" : 343,
             "column" : 25,
             "source_fragment" : "standard_metadata.ingress_port == 2"
           },
@@ -1815,7 +1969,7 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_mpolkaintedge302"
+          "true_next" : "tbl_mpolkaintedge344"
         }
       ]
     },
@@ -1824,12 +1978,85 @@
       "id" : 1,
       "source_info" : {
         "filename" : "m-polka-int-edge.p4",
-        "line" : 314,
+        "line" : 356,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
-      "init_table" : null,
-      "tables" : [],
+      "init_table" : "MyEgress.teste",
+      "tables" : [
+        {
+          "name" : "MyEgress.teste",
+          "id" : 10,
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 360,
+            "column" : 10,
+            "source_fragment" : "teste"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.priority",
+              "target" : ["standard_metadata", "priority"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [14],
+          "actions" : ["NoAction"],
+          "base_default_next" : "MyEgress.teste2",
+          "next_tables" : {
+            "NoAction" : "MyEgress.teste2"
+          },
+          "default_entry" : {
+            "action_id" : 14,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "MyEgress.teste2",
+          "id" : 11,
+          "source_info" : {
+            "filename" : "m-polka-int-edge.p4",
+            "line" : 371,
+            "column" : 10,
+            "source_fragment" : "teste2"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "standard_metadata.qid",
+              "target" : ["standard_metadata", "qid"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [15],
+          "actions" : ["NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "NoAction" : null
+          },
+          "default_entry" : {
+            "action_id" : 15,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        }
+      ],
       "action_profiles" : [],
       "conditionals" : []
     }
@@ -1840,7 +2067,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "m-polka-int-edge.p4",
-        "line" : 326,
+        "line" : 394,
         "column" : 6,
         "source_fragment" : "update_checksum( ..."
       },
@@ -1906,7 +2133,7 @@
       ["standard_metadata", "qid"]
     ]
   ],
-  "program" : "tos-edge.bmv2/m-polka-int-edge.p4i",
+  "program" : "edge-multiplas-filas.bmv2/m-polka-int-edge.p4i",
   "__meta__" : {
     "version" : [2, 23],
     "compiler" : "https://github.com/p4lang/p4c"

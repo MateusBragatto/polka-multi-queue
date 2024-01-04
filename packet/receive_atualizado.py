@@ -31,23 +31,23 @@ class IntData(Packet):
                     BitField("ingress_global_timestamp", 0, 64),
                     BitField("egress_global_timestamp", 0, 64),
                     BitField("enq_timestamp", 0, 32),
-                    #BitField("enq_qdepth", 0, 32),
+                    BitField("enq_qdepth", 0, 32), #solucao1
                     BitField("deq_timedelta", 0, 32),
                     BitField("deq_qdepth", 0, 32),
-                    BitField("port1_enq_qdepth0", 0, 32),
-                    BitField("port1_enq_qdepth1", 0, 32),
-                    BitField("port2_enq_qdepth0", 0, 32),
-                    BitField("port2_enq_qdepth1", 0, 32),
-                    BitField("port3_enq_qdepth0", 0, 32),
-                    BitField("port3_enq_qdepth1", 0, 32),
-                    BitField("port4_enq_qdepth0", 0, 32),
-                    BitField("port4_enq_qdepth1", 0, 32),
+                    # BitField("port1_enq_qdepth0", 0, 32),
+                    # BitField("port1_enq_qdepth1", 0, 32),
+                    # BitField("port2_enq_qdepth0", 0, 32),
+                    # BitField("port2_enq_qdepth1", 0, 32),
+                    # BitField("port3_enq_qdepth0", 0, 32),
+                    # BitField("port3_enq_qdepth1", 0, 32),
+                    # BitField("port4_enq_qdepth0", 0, 32),
+                    # BitField("port4_enq_qdepth1", 0, 32),
                     BitField("priority", 0, 3),
                     BitField("qid", 0, 5)]
 
 
-class SourceRoute(Packet):
-   fields_desc = [ BitField("nrouteid", 0, 112)]
+#class SourceRoute(Packet):
+  #  fields_desc = [ BitField("nrouteid", 0, 112)]
 
 
 
@@ -113,8 +113,13 @@ def main():
   # bind_layers(SourceRoute, IntHeader, code = 118)
   # bind_layers(IntHeader, IntData)
   # bind_layers(IntData, IntData)
-  bind_layers(Ether, SourceRoute)
-  bind_layers(SourceRoute, IntHeader)
+                                  # bind_layers(Ether, SourceRoute) solucao3
+                                  # bind_layers(SourceRoute, IntHeader)
+                                  # bind_layers(IntHeader,IntData)
+                                  # bind_layers(IntData, IntData)
+                                  # bind_layers(IntData, IP)
+
+  bind_layers(Ether, IntHeader)
   bind_layers(IntHeader,IntData)
   bind_layers(IntData, IntData)
   bind_layers(IntData, IP)

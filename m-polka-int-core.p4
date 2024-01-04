@@ -22,15 +22,17 @@ typedef bit<5> qid_v;
 typedef bit<32> enq_qdepth_v;
 
 enum bit<8> FieldLists {
-    resubmit_fl1 = 0
+    resubmit_fl1 = 0 //n tem recirculacao
 }
-
+/*
 struct mymeta_t {
+  //sem recirculacao
     @field_list(FieldLists.resubmit_fl1)
     bit<3>   resubmit_reason;
     @field_list(FieldLists.resubmit_fl1)
     bit<9> f1;
 }
+*/
 
 header ethernet_t {
   macAddr_t dstAddr;
@@ -38,10 +40,10 @@ header ethernet_t {
   bit<16>   etherType;
 }
 
-header srcRoute_t {
+/*header srcRoute_t { //sem polka
   //bit<160>   routeId;
   bit<112>   routeId; //7 nos
-}
+}*/
 
 header ipv4_t {
   bit<4>  version;
@@ -58,12 +60,13 @@ header ipv4_t {
   bit<32> dstAddr;
 }
 
-struct polka_t_top {
+//isso nem ta usando
+/*struct polka_t_top {
   macAddr_t dstAddr;
   macAddr_t srcAddr;
   bit<16>   etherType;
   bit<160>   routeId;
-}
+}*/
 
 
 header intoption_t {
@@ -88,11 +91,15 @@ header inthdr_t {
   bit<64>   ingress_global_timestamp;
   bit<64>   egress_global_timestamp;
   bit<32>   enq_timestamp;
-  //bit<32>   enq_qdepth;
+  //solucao1:
+  bit<32>   enq_qdepth;
   bit<32>   deq_timedelta;
   bit<32>   deq_qdepth;
+  
+
+  //solucao 3:
   //cada switch q passar capta todas as infos dela (as 2 filas de cada porta)
-  enq_qdepth_v port1_enq_qdepth0;
+  /*enq_qdepth_v port1_enq_qdepth0;
   enq_qdepth_v port1_enq_qdepth1;
 
   enq_qdepth_v port2_enq_qdepth0;
@@ -103,6 +110,7 @@ header inthdr_t {
 
   enq_qdepth_v port4_enq_qdepth0;
   enq_qdepth_v port4_enq_qdepth1;
+  */
   //n precisa mas eu vo deixar pra mostrar q eh mudavel
   priority_v priority;
   qid_v      qid;
@@ -113,6 +121,7 @@ header last_egress_sampling_timestamp_t {
 }
 
 struct metadata {
+  //acho q n usa nada aqui mas sei la rs
   bit<112>  routeId;
   bit<16>   etherType;
   bit<1>    apply_sr;
@@ -127,12 +136,12 @@ struct metadata {
   bit<8> path_info_remaining;
   last_egress_sampling_timestamp_t m_last_egress_sampling_timestamp;
 
-  mymeta_t mymeta;
+  //mymeta_t mymeta;
 }
 
 struct headers {
   ethernet_t          ethernet;
-  srcRoute_t          srcRoute;
+  //srcRoute_t          srcRoute;
   //ipv4_t              ipv4;
   intoption_t         int_option;
   inthdr_t[MAX_HOPS]  int_info;
@@ -150,8 +159,8 @@ parser MyParser(packet_in packet,
                 inout standard_metadata_t standard_metadata) {
 
   state start {
-    meta.apply_sr = 0;
-    meta.egress_int = 0;
+    meta.apply_sr = 0;//
+    meta.egress_int = 0;//
     transition parse_ethernet;
   }
 
@@ -165,9 +174,9 @@ parser MyParser(packet_in packet,
   }
 
   state get_routeId {
-    meta.apply_sr = 1;
-    packet.extract(hdr.srcRoute);
-    meta.routeId = hdr.srcRoute.routeId;
+    meta.apply_sr = 1;//
+    //packet.extract(hdr.srcRoute);
+    //meta.routeId = hdr.srcRoute.routeId;
     //transition parse_ipv4;
     transition parse_int_option;
   }
@@ -216,7 +225,7 @@ control MyIngress(inout headers hdr,
   action drop() {
     mark_to_drop(standard_metadata);
   }
-
+  /*
   action clone_packet(bit<32> mirror_session_id) {
     // Clone from ingress to egress pipeline
     clone(CloneType.I2E, mirror_session_id);
@@ -251,7 +260,7 @@ control MyIngress(inout headers hdr,
 
     meta.port = (bit<9>) nport;
 
-  }
+  }*/
 
   action ipv4_forward(egressSpec_t port) {
         //hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -279,7 +288,7 @@ control MyIngress(inout headers hdr,
         size = 1024;
         default_action = NoAction();
   }
-
+  /*
   table teste {
         key = {
             standard_metadata.priority: exact;
@@ -300,7 +309,7 @@ control MyIngress(inout headers hdr,
         }
         size = 1024;
         default_action = NoAction();
-    } 
+    } */
 
     table ip_sender_match_table{
         key = {
@@ -314,10 +323,43 @@ control MyIngress(inout headers hdr,
         default_action = NoAction();
     }
 
+    /*
+    table solucao1_table_ip_sender{
+      key = {
+        hdr.ipv4.srcAddr: lpm;
+      }
+
+      actions = {
+        ip_sender_change_priority;
+        NoAction;
+      }
+      size = 1024;
+      default_action = NoAction;
+    }
+    */
+
   apply {
-    if (meta.apply_sr==1){
-      standard_metadata.priority = 1; //passando pelas filas 0 (define qid = 0 na saida) - tanto faz vai ler de todos
-      if (meta.mymeta.resubmit_reason == 0) {
+    //pacote INT
+    //if (meta.apply_sr==1){
+      //solucao1: usa a ip_sender_match_table (baseado em h1 e h5 por enquanto)
+
+    if(hdr.int_option.isValid()){ //criei esse if pra solucao1
+      //ipv4_lpm.apply() Embaixo
+      //solucao1_table_ip_sender.apply();//define a fila no egresso
+      //ipv4_lpm.apply(); //faz forward por ipv4 padrao (padrao do int) VAI FAZER LA EMBAIXO
+    }
+      
+
+      //e pra encaminhamento tem que fazer comum pro destino se n me engano
+
+
+
+      //solucao3: tanto faz
+      //standard_metadata.priority = 1; //passando pelas filas 0 (define qid = 0 na saida) - tanto faz vai ler de todos
+      
+      
+      //solucao3: parte da recirculacao
+      /*if (meta.mymeta.resubmit_reason == 0) {
             teste.apply();
             teste2.apply();
             // Source-routing calculation
@@ -365,19 +407,25 @@ control MyIngress(inout headers hdr,
       } else if (meta.mymeta.resubmit_reason == 1) {
         //quando o pacote recircular
         standard_metadata.egress_spec = meta.mymeta.f1;
-      }
+      }*/
 
-    } else{
-        if(hdr.ipv4.diffserv != 55){
-          //encaminhamento pacotes
-          ipv4_lpm.apply();
-          ip_sender_match_table.apply();
+
+
+    //} 
+    else{//n eh pacote int
+        if(hdr.ipv4.diffserv != 55){ //esse if acho q nao e necessario, no caso ficaria igual da solucao3
+          //encaminhamento pacotes quando for de dados e NAO for com TOS = 55 (sender)
+          //ipv4_lpm.apply(); VAI FAZER EMBAIXO
+          //ip_sender_match_table.apply(); VAI FAZER EMBAIXO
         }
         else{
           drop();
         }
 
     }
+
+    ipv4_lpm.apply(); //solucao1: faz sempre int ou nao
+    ip_sender_match_table.apply();
   }
 }
 
@@ -389,7 +437,7 @@ control MyEgress(inout headers hdr,
                 inout standard_metadata_t standard_metadata) {
 
   //novos
-  register<enq_qdepth_v>(1) reg_port1_qdepth_0;
+  /*register<enq_qdepth_v>(1) reg_port1_qdepth_0;
   register<enq_qdepth_v>(1) reg_port1_qdepth_1;
 
   register<enq_qdepth_v>(1) reg_port2_qdepth_0;
@@ -541,7 +589,7 @@ control MyEgress(inout headers hdr,
       reg_port4_qdepth_1.write(0, (enq_qdepth_v) standard_metadata.enq_qdepth);
       
   }
-
+  */
 
   action drop() {
     mark_to_drop(standard_metadata);
@@ -563,14 +611,19 @@ control MyEgress(inout headers hdr,
     hdr.int_info[0].egress_global_timestamp=(bit<64>)standard_metadata.egress_global_timestamp;
     hdr.int_info[0].enq_timestamp=(bit<32>)standard_metadata.enq_timestamp;
     //leituras nos registradores dos enq_qdepth feitas em outras actions
-    //hdr.int_info[0].enq_qdepth=(bit<32>)standard_metadata.enq_qdepth;
+    //solucao1:
+    hdr.int_info[0].enq_qdepth=(bit<32>)standard_metadata.enq_qdepth;
     hdr.int_info[0].deq_timedelta=(bit<32>)standard_metadata.deq_timedelta;
     hdr.int_info[0].deq_qdepth=(bit<32>)standard_metadata.deq_qdepth;
    
     hdr.int_info[0].priority = (priority_v)standard_metadata.priority; //definindo no ingresso (0)
     hdr.int_info[0].qid = (qid_v)standard_metadata.qid; //se o priority foi 0 no ingress, aqui vai ser tbm
 
+
+
+    //solucao3
     //leituras dos registradores
+    /*
     r_register_manipulation_port1_qdepth0();
     r_register_manipulation_port1_qdepth1();
 
@@ -582,7 +635,7 @@ control MyEgress(inout headers hdr,
 
     r_register_manipulation_port4_qdepth0();
     r_register_manipulation_port4_qdepth1();
-
+    */
     /*if(standard_metadata.egress_port == 1){
       //r_register_manipulation_port1_qdepth0();
       //r_register_manipulation_port1_qdepth1();
@@ -653,7 +706,10 @@ control MyEgress(inout headers hdr,
       drop();
     } 
     //verificando se eh um pacote de dados
+    //solucao3: faz todas verificacoes
+    //solucao1: n faz nada
     else if(!hdr.int_option.isValid()){
+      /*
       if(standard_metadata.qid == 0 && standard_metadata.egress_port == 1){
         w_register_manipulation_port1_qdepth0();
       }
@@ -678,31 +734,36 @@ control MyEgress(inout headers hdr,
       else if(standard_metadata.qid == 1 && standard_metadata.egress_port == 4){
         w_register_manipulation_port4_qdepth1();
       } 
+      */
     }
-
-
+    //pacote de int
+    else if(hdr.ethernet.etherType == TYPE_SRCROUTING ){
+      addIntInfo.apply();
+    }
+    //solucao3:
     //pacote de telemetria de recirculacao (primeira porta)
-    else if (meta.mymeta.resubmit_reason == 1) {
+    //else if (meta.mymeta.resubmit_reason == 1) {
       //r_last_egress_global_timestamp.read(meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp,(bit<32>)standard_metadata.egress_port);
 
       //nao pega todo pacote de telemetria, baseado num tempo de 50 milisegundos
       //pensar aqui no que faremos
       //if(standard_metadata.egress_global_timestamp - meta.m_last_egress_sampling_timestamp.h_last_egress_sampling_timestamp > 50000) {
-      addIntInfo.apply();
+      //addIntInfo.apply();
       //teste.apply();
       //teste2.apply();
       //r_last_egress_global_timestamp.write((bit<32>)standard_metadata.egress_port, standard_metadata.egress_global_timestamp);
       //}
-    } 
+    //} 
       
+    //solucao3:
     //qualquer outra porta que nao seja a de cima (primeira porta)
-    else {
+    //else {
       //remove o historico
       //hdr.int_option.remaining_hop_count = 0;
       //hdr.int_info.pop_front(MAX_HOPS);
 
-      addIntInfo.apply();
-    }
+      //addIntInfo.apply();
+    //}
   }
 
 }
@@ -736,7 +797,7 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
 control MyDeparser(packet_out packet, in headers hdr) {
   apply {
     packet.emit(hdr.ethernet);
-    packet.emit(hdr.srcRoute);
+    //packet.emit(hdr.srcRoute);
     //packet.emit(hdr.ipv4);
     packet.emit(hdr.int_option);
     packet.emit(hdr.int_info);
